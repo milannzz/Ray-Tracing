@@ -1,8 +1,6 @@
 import pygame
 import math
 
-from pygame.constants import TIMER_RESOLUTION
-
 # initialization
 pygame.init()
 
@@ -14,6 +12,7 @@ RED = (255, 0, 0)
 GREEN = (0, 255, 0)
 BLUE = (0, 0, 255)
 SKY_BLUE = (135, 206, 235)
+YELLOW = (255, 255, 0)
 
 
 # Constant
@@ -25,8 +24,9 @@ TILE_SIZE = int((WINDOW_WIDTH / 2) / MAP_SIZE)
 MAX_DEPTH = int(MAP_SIZE * TILE_SIZE)
 FOV = math.pi / 3
 HALF_FOV = FOV / 2
-CASTED_RAYS = 240
-CASTED_RAY_LENGTH = 100
+CASTED_RAYS = 120
+CASTED_RAY_LENGTH = 60
+SCALE = ((WINDOW_WIDTH / 2) / CASTED_RAY_LENGTH)
 CASTED_STEP_ANGLE = (FOV) / CASTED_RAYS
 
 # Timer
@@ -36,6 +36,8 @@ clock = pygame.time.Clock()
 player_x = (WINDOW_WIDTH / 2) / 2
 player_y = WINDOW_HEIGHT / 2
 player_angle = math.pi
+move_forward = True
+move_backward = True
  
 MAP = [ [1, 1, 1, 1, 1, 1, 1, 1],
         [1, 0, 1, 0, 1, 1, 1, 1],
@@ -85,28 +87,43 @@ def update_fps():
 	return fps_text
 
 def ray_casting():
-    global MAX_DEPTH
-    global player_angle
-    start_angle = player_angle - HALF_FOV 
+    start_angle = player_angle - HALF_FOV
     for ray in range(CASTED_RAYS):
         for depth in range(MAX_DEPTH):
             target_x = player_x - math.sin(start_angle) * depth
-            target_y = player_x + math.cos(start_angle) * depth
+            target_y = player_y + math.cos(start_angle) * depth
             
             col = int(target_x / TILE_SIZE)
             row = int(target_y / TILE_SIZE)
+            
+            depth *= math.cos(player_angle - start_angle)
 
-            # Logical Error <---------- To be fixed --------------------->
-            if row < 0:
-                row = MAP_SIZE + row
+            color = 255 / (1 + depth * depth * 0.00002)
+            COLOR = (0, 0, color)
 
-            if col < 0:
-                col = MAP_SIZE + col
-
-            if(MAP[row][col] == 1):
-                pygame.draw.line(window, RED, (player_x, player_y), (target_x, target_y))
+            if MAP[row][col] == 1:
+                pygame.draw.line(window, YELLOW, (player_x, player_y), (target_x, target_y))
+                wall_height = 12000 / (depth + 0.0001)
+                pygame.draw.rect(window, COLOR, 
+                            (480 + ray * SCALE, 240 - wall_height / 2,
+                             SCALE, wall_height))
                 break
+                
+        # increment angle by a single step
         start_angle += CASTED_STEP_ANGLE
+
+def detect_collision():
+    global player_x
+    global player_y
+    col = int(player_x / TILE_SIZE)
+    row = int(player_y / TILE_SIZE)
+    if MAP[row][col] == 1:
+        if move_forward:
+            player_x -= -math.sin(player_angle)
+            player_y -= math.cos(player_angle)
+        else:
+            player_x += -math.sin(player_angle)
+            player_y += math.cos(player_angle)
 
 state = True
 while state:
@@ -118,6 +135,7 @@ while state:
     window.fill(SKY_BLUE, (WINDOW_WIDTH / 2, 0, WINDOW_WIDTH, WINDOW_HEIGHT / 2))
     window.fill(GREY, (WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2, WINDOW_WIDTH, WINDOW_HEIGHT))
     
+    detect_collision()
     #Draw map
     draw_map()
 
@@ -129,13 +147,15 @@ while state:
 
     # Movement
     keys = pygame.key.get_pressed()
-    if keys[pygame.K_LEFT] : player_angle -= 0.1000
-    if keys[pygame.K_RIGHT] : player_angle += 0.1000
-    if keys[pygame.K_UP] : 
+    if keys[pygame.K_LEFT] : player_angle -= 0.0500
+    if keys[pygame.K_RIGHT] : player_angle += 0.0500
+    if keys[pygame.K_UP]:
+        move_forward = True 
         player_x += -math.sin(player_angle)
         player_y += math.cos(player_angle)
-    if keys[pygame.K_DOWN] : 
-        player_x -= -math.sin(player_angle)
+    if keys[pygame.K_DOWN] and move_backward:
+        move_forward = False
+        player_x -= -math.sin(player_angle) 
         player_y -= math.cos(player_angle)
  
     pygame.display.update()
