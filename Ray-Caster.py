@@ -54,7 +54,6 @@ font = pygame.font.SysFont("Arial", 18)
 window = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
 gamedisplay = pygame.display.set_caption("Ray Caster")
 
-
 # Draw map 
 def draw_map():
     for x in range(MAP_SIZE):
@@ -78,8 +77,21 @@ def draw_map():
                                         player_y + math.cos(player_angle + HALF_FOV) * 30), 3)
 
 def player_movement():
-    pass
-
+    global player_angle
+    global player_x
+    global player_y
+    global move_forward
+    keys = pygame.key.get_pressed()
+    if keys[pygame.K_LEFT] : player_angle -= 0.0500
+    if keys[pygame.K_RIGHT] : player_angle += 0.0500
+    if keys[pygame.K_UP]:
+        move_forward = True 
+        player_x += -math.sin(player_angle)
+        player_y += math.cos(player_angle)
+    if keys[pygame.K_DOWN] and move_backward:
+        move_forward = False
+        player_x -= -math.sin(player_angle) 
+        player_y -= math.cos(player_angle)
 
 def update_fps():
 	fps = str(int(clock.get_fps()))
@@ -141,25 +153,12 @@ while state:
 
     # Ray Casting
     ray_casting()
-
     # FPS Counter
-    window.blit(update_fps(), (10, 0))
-
+    
     # Movement
-    keys = pygame.key.get_pressed()
-    if keys[pygame.K_LEFT] : player_angle -= 0.0500
-    if keys[pygame.K_RIGHT] : player_angle += 0.0500
-    if keys[pygame.K_UP]:
-        move_forward = True 
-        player_x += -math.sin(player_angle)
-        player_y += math.cos(player_angle)
-    if keys[pygame.K_DOWN] and move_backward:
-        move_forward = False
-        player_x -= -math.sin(player_angle) 
-        player_y -= math.cos(player_angle)
- 
+    player_movement()
     pygame.display.update()
-
+    window.blit(update_fps(), (10, 0))
     #set fPS
     clock.tick(60)
 
